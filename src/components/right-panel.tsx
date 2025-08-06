@@ -26,9 +26,17 @@ const OANDA_API_KEY =
 
 interface RightPanelProps {
   chartData: CandlestickData[];
+  selectedInstrument: string;
+  onInstrumentSelect: (instrument: string) => void;
 }
 
-const WatchlistPanel = () => {
+const WatchlistPanel = ({
+  selectedInstrument,
+  onInstrumentSelect,
+}: {
+  selectedInstrument: string;
+  onInstrumentSelect: (instrument: string) => void;
+}) => {
   const { instruments, loading, error, refetch } =
     useOandaInstruments(OANDA_API_KEY);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,6 +52,10 @@ const WatchlistPanel = () => {
         instrument.name.toLowerCase().includes(query)
     );
   }, [instruments, searchQuery]);
+
+  const handleInstrumentClick = (instrumentSymbol: string) => {
+    onInstrumentSelect(instrumentSymbol);
+  };
 
   if (loading) {
     return (
@@ -111,7 +123,15 @@ const WatchlistPanel = () => {
                     )
                     .slice(0, 5)
                     .map((instrument) => (
-                      <TableRow key={instrument.symbol}>
+                      <TableRow
+                        key={instrument.symbol}
+                        className={`cursor-pointer hover:bg-muted/50 ${
+                          selectedInstrument === instrument.symbol
+                            ? "bg-muted"
+                            : ""
+                        }`}
+                        onClick={() => handleInstrumentClick(instrument.symbol)}
+                      >
                         <TableCell className="font-medium font-mono">
                           {instrument.symbol}
                         </TableCell>
@@ -200,7 +220,12 @@ const WatchlistPanel = () => {
                   filteredInstruments.map((instrument) => (
                     <TableRow
                       key={instrument.symbol}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 ${
+                        selectedInstrument === instrument.symbol
+                          ? "bg-muted"
+                          : ""
+                      }`}
+                      onClick={() => handleInstrumentClick(instrument.symbol)}
                     >
                       <TableCell className="font-medium font-mono">
                         {instrument.symbol}
@@ -233,7 +258,11 @@ const WatchlistPanel = () => {
   );
 };
 
-export function RightPanel({ chartData }: RightPanelProps) {
+export function RightPanel({
+  chartData,
+  selectedInstrument,
+  onInstrumentSelect,
+}: RightPanelProps) {
   return (
     <aside className="w-[350px] border-l border-border bg-card flex flex-col">
       <Tabs defaultValue="watchlist" className="w-full h-full flex flex-col">
@@ -242,7 +271,10 @@ export function RightPanel({ chartData }: RightPanelProps) {
           <TabsTrigger value="ai">AI Analysis</TabsTrigger>
         </TabsList>
         <TabsContent value="watchlist" className="flex-1 min-h-0 mt-0">
-          <WatchlistPanel />
+          <WatchlistPanel
+            selectedInstrument={selectedInstrument}
+            onInstrumentSelect={onInstrumentSelect}
+          />
         </TabsContent>
         <TabsContent value="ai" className="flex-1 min-h-0 mt-0">
           <AiPanel chartData={chartData} />
