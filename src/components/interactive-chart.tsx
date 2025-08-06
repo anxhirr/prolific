@@ -1,6 +1,6 @@
 "use client";
 
-import { CandlestickData } from "@/lib/mock-data";
+import { CandlestickData } from "@/lib/types";
 import {
   Bar,
   CartesianGrid,

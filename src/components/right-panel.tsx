@@ -15,8 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOandaInstruments } from "@/hooks/use-oanda-instruments";
-import type { CandlestickData } from "@/lib/mock-data";
-import { mockForexInstruments } from "@/lib/mock-data";
+import type { CandlestickData } from "@/lib/types";
 import { AlertCircle, Loader2, RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -86,72 +85,6 @@ const WatchlistPanel = ({
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
-
-        {/* Fallback to mock data */}
-        <div>
-          <p className="mb-2">Showing demo data:</p>
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search instruments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <ScrollArea className="h-48">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockForexInstruments
-                    .filter(
-                      (instrument) =>
-                        !searchQuery ||
-                        instrument.symbol
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        instrument.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                    )
-                    .slice(0, 5)
-                    .map((instrument) => (
-                      <TableRow
-                        key={instrument.symbol}
-                        className={`cursor-pointer hover:bg-muted/50 ${
-                          selectedInstrument === instrument.symbol
-                            ? "bg-muted"
-                            : ""
-                        }`}
-                        onClick={() => handleInstrumentClick(instrument.symbol)}
-                      >
-                        <TableCell className="font-medium font-mono">
-                          {instrument.symbol}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {instrument.name}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-mono text-sm">
-                            {instrument.price.toFixed(
-                              instrument.displayPrecision
-                            )}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
-        </div>
       </div>
     );
   }

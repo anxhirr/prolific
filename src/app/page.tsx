@@ -5,8 +5,7 @@ import { DrawingToolbar } from "@/components/drawing-toolbar";
 import { InteractiveChart } from "@/components/interactive-chart";
 import { RightPanel } from "@/components/right-panel";
 import { useOandaCandles } from "@/hooks/use-oanda-candles";
-import type { CandlestickData } from "@/lib/mock-data";
-import { generateCandleData } from "@/lib/mock-data";
+import type { CandlestickData } from "@/lib/types";
 import { useState } from "react";
 
 // Use your OANDA API key - in production, this should come from environment variables
@@ -26,8 +25,7 @@ export default function ChartWhisperPage() {
   } = useOandaCandles(instrument, timeframe, OANDA_API_KEY);
 
   // Fallback to mock data if OANDA data is not available
-  const chartData: CandlestickData[] =
-    oandaCandles.length > 0 ? oandaCandles : generateCandleData(100);
+  const chartData: CandlestickData[] = oandaCandles;
 
   const handleTimeframeChange = (newTimeframe: string) => {
     setTimeframe(newTimeframe);

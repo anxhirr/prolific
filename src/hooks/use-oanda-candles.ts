@@ -1,4 +1,4 @@
-import type { CandlestickData } from "@/lib/mock-data";
+import type { CandlestickData } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 interface UseOandaCandlesReturn {
