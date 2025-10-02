@@ -47,6 +47,12 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   
+  // Drag state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  
   // Detect fractals
   const fractals = showFractals ? detectFractals(data) : [];
 
@@ -250,13 +256,147 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 1 : -1;
-    const newStart = Math.max(0, visibleRange.start + delta * 5);
-    const newEnd = Math.min(data.length - 1, visibleRange.end + delta * 5);
+    const zoomFactor = 0.1;
+    const currentRange = visibleRange.end - visibleRange.start;
+    const newRange = Math.max(10, currentRange * (1 + delta * zoomFactor));
+    const center = (visibleRange.start + visibleRange.end) / 2;
+    const newStart = Math.max(0, Math.floor(center - newRange / 2));
+    const newEnd = Math.min(data.length - 1, Math.floor(center + newRange / 2));
     
-    if (newEnd - newStart >= 10) {
-      setVisibleRange({ start: newStart, end: newEnd });
+    setVisibleRange({ start: newStart, end: newEnd });
+  };
+
+  // Handle mouse down for drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setIsDragging(true);
+    setDragStart({ x, y });
+    setLastMousePos({ x, y });
+    setIsPanning(true);
+    
+    // Change cursor to grabbing
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grabbing';
     }
   };
+
+  // Handle mouse move for dragging
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !isPanning) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const deltaX = x - lastMousePos.x;
+    const deltaY = y - lastMousePos.y;
+    
+    // Calculate how many candles to move based on mouse movement
+    const candleWidth = Math.max(4, (dimensions.width - 120) / (visibleRange.end - visibleRange.start + 1) - 2);
+    const candlesToMove = Math.round(deltaX / (candleWidth + 2));
+    
+    if (candlesToMove !== 0) {
+      const newStart = Math.max(0, visibleRange.start - candlesToMove);
+      const newEnd = Math.min(data.length - 1, visibleRange.end - candlesToMove);
+      
+      // Ensure we don't go beyond data bounds
+      if (newStart >= 0 && newEnd < data.length && newEnd - newStart >= 10) {
+        setVisibleRange({ start: newStart, end: newEnd });
+      }
+    }
+    
+    setLastMousePos({ x, y });
+  };
+
+  // Handle mouse up for drag end
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsPanning(false);
+    
+    // Reset cursor
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grab';
+    }
+  };
+
+  // Handle mouse leave to stop dragging
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+    setIsPanning(false);
+    
+    // Reset cursor
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grab';
+    }
+  };
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target !== document.body) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          // Pan left
+          const leftStart = Math.max(0, visibleRange.start - 5);
+          const leftEnd = Math.min(data.length - 1, visibleRange.end - 5);
+          if (leftEnd - leftStart >= 10) {
+            setVisibleRange({ start: leftStart, end: leftEnd });
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          // Pan right
+          const rightStart = Math.max(0, visibleRange.start + 5);
+          const rightEnd = Math.min(data.length - 1, visibleRange.end + 5);
+          if (rightEnd - rightStart >= 10) {
+            setVisibleRange({ start: rightStart, end: rightEnd });
+          }
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          // Zoom in
+          const zoomInRange = Math.max(10, (visibleRange.end - visibleRange.start) * 0.8);
+          const zoomInCenter = (visibleRange.start + visibleRange.end) / 2;
+          const zoomInStart = Math.max(0, Math.floor(zoomInCenter - zoomInRange / 2));
+          const zoomInEnd = Math.min(data.length - 1, Math.floor(zoomInCenter + zoomInRange / 2));
+          setVisibleRange({ start: zoomInStart, end: zoomInEnd });
+          break;
+        case '-':
+          e.preventDefault();
+          // Zoom out
+          const zoomOutRange = Math.min(data.length - 1, (visibleRange.end - visibleRange.start) * 1.25);
+          const zoomOutCenter = (visibleRange.start + visibleRange.end) / 2;
+          const zoomOutStart = Math.max(0, Math.floor(zoomOutCenter - zoomOutRange / 2));
+          const zoomOutEnd = Math.min(data.length - 1, Math.floor(zoomOutCenter + zoomOutRange / 2));
+          setVisibleRange({ start: zoomOutStart, end: zoomOutEnd });
+          break;
+        case 'Home':
+          e.preventDefault();
+          // Go to beginning
+          setVisibleRange({ start: 0, end: Math.min(50, data.length - 1) });
+          break;
+        case 'End':
+          e.preventDefault();
+          // Go to end
+          const endRange = Math.min(50, data.length - 1);
+          setVisibleRange({ start: Math.max(0, data.length - 1 - endRange), end: data.length - 1 });
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visibleRange, data.length]);
 
   // Redraw when data changes
   useEffect(() => {
@@ -278,7 +418,12 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
         width={dimensions.width}
         height={dimensions.height}
         onWheel={handleWheel}
-        className="w-full h-full border border-border rounded-lg cursor-pointer"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        className="w-full h-full border border-border rounded-lg cursor-grab select-none"
+        style={{ userSelect: 'none' }}
       />
       
       {/* Simple controls */}
@@ -318,6 +463,12 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
             • {fractals.length} fractals ({fractals.filter((f: FractalPoint) => f.type === 'high').length}H, {fractals.filter((f: FractalPoint) => f.type === 'low').length}L)
           </span>
         )}
+      </div>
+      
+      {/* Keyboard shortcuts info */}
+      <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded border">
+        <div className="font-semibold mb-1">Controls:</div>
+        <div>Drag: Pan • Wheel: Zoom • ←→: Pan • +/-: Zoom • Home/End: Navigate</div>
       </div>
     </div>
   );
