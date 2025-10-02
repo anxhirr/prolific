@@ -458,17 +458,6 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
       
       <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
         {visibleData.length} of {data.length} candles
-        {showFractals && fractals.length > 0 && (
-          <span className="ml-2">
-            • {fractals.length} fractals ({fractals.filter((f: FractalPoint) => f.type === 'high').length}H, {fractals.filter((f: FractalPoint) => f.type === 'low').length}L)
-          </span>
-        )}
-      </div>
-      
-      {/* Keyboard shortcuts info */}
-      <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded border">
-        <div className="font-semibold mb-1">Controls:</div>
-        <div>Drag: Pan • Wheel: Zoom • ←→: Pan • +/-: Zoom • Home/End: Navigate</div>
       </div>
     </div>
   );
