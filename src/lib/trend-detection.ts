@@ -37,6 +37,43 @@ export interface TrendDetectionOptions {
   trendThreshold?: number;
 }
 
+export interface FractalTrendOptions {
+  minFractals?: number;
+  useTimeDecay?: boolean;
+  confidenceThreshold?: number;
+}
+
+export interface FractalTrendResult {
+  trend: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS' | 'INSUFFICIENT_DATA';
+  confidence: number;
+  pattern: string;
+  recentFractals: {
+    lastHigh: FractalPoint | null;
+    lastLow: FractalPoint | null;
+    previousHigh: FractalPoint | null;
+    previousLow: FractalPoint | null;
+  };
+  trendStrength: number;
+  analysis: string;
+  recommendations: string[];
+}
+
+export interface FractalPatternAnalysis {
+  recentFractals: {
+    lastHigh: FractalPoint | null;
+    lastLow: FractalPoint | null;
+    previousHigh: FractalPoint | null;
+    previousLow: FractalPoint | null;
+  };
+  highSequence: FractalPoint[];
+  lowSequence: FractalPoint[];
+  isHigherHigh: boolean;
+  isLowerHigh: boolean;
+  isHigherLow: boolean;
+  isLowerLow: boolean;
+  patternStrength: number;
+}
+
 /**
  * Calculate Simple Moving Average for a given period
  */
@@ -328,5 +365,273 @@ export function getTrendRecommendations(result: TrendAnalysisResult): string[] {
   recommendations.push('Always use proper risk management and stop-loss orders');
   recommendations.push('Consider market volatility and news events');
   
+  return recommendations;
+}
+
+/**
+ * Analyze fractal patterns to detect market structure
+ */
+function analyzeFractalPattern(fractals: FractalPoint[]): FractalPatternAnalysis {
+  const highs = fractals.filter(f => f.type === 'high').sort((a, b) => a.index - b.index);
+  const lows = fractals.filter(f => f.type === 'low').sort((a, b) => a.index - b.index);
+  
+  const recentFractals = {
+    lastHigh: highs.length > 0 ? highs[highs.length - 1] : null,
+    lastLow: lows.length > 0 ? lows[lows.length - 1] : null,
+    previousHigh: highs.length > 1 ? highs[highs.length - 2] : null,
+    previousLow: lows.length > 1 ? lows[lows.length - 2] : null,
+  };
+  
+  // Analyze pattern relationships
+  let isHigherHigh = false;
+  let isLowerHigh = false;
+  let isHigherLow = false;
+  let isLowerLow = false;
+  let patternStrength = 0;
+  
+  if (recentFractals.lastHigh && recentFractals.previousHigh) {
+    const priceDiff = (recentFractals.lastHigh.price - recentFractals.previousHigh.price) / recentFractals.previousHigh.price;
+    isHigherHigh = priceDiff > 0.001; // 0.1% threshold to avoid noise
+    isLowerHigh = priceDiff < -0.001;
+    patternStrength += Math.abs(priceDiff) * 50; // Scale for strength calculation
+  }
+  
+  if (recentFractals.lastLow && recentFractals.previousLow) {
+    const priceDiff = (recentFractals.lastLow.price - recentFractals.previousLow.price) / recentFractals.previousLow.price;
+    isHigherLow = priceDiff > 0.001;
+    isLowerLow = priceDiff < -0.001;
+    patternStrength += Math.abs(priceDiff) * 50;
+  }
+  
+  return {
+    recentFractals,
+    highSequence: highs,
+    lowSequence: lows,
+    isHigherHigh,
+    isLowerHigh,
+    isHigherLow,
+    isLowerLow,
+    patternStrength: Math.min(patternStrength, 100), // Cap at 100
+  };
+}
+
+/**
+ * Calculate time decay factor for fractal analysis
+ */
+function calculateTimeDecay(lastFractal: FractalPoint, previousFractal: FractalPoint): number {
+  const timeDiff = new Date(lastFractal.date).getTime() - new Date(previousFractal.date).getTime();
+  const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+  
+  // Decay factor: more recent fractals have higher weight
+  // After 30 days, decay factor becomes 0.5
+  return Math.max(0.1, Math.exp(-daysDiff / 30));
+}
+
+/**
+ * Detect market trend using fractal analysis (swing points)
+ * This is completely separate from the moving average trend detection
+ */
+export function detectFractalTrend(
+  candles: CandlestickData[],
+  options: FractalTrendOptions = {}
+): FractalTrendResult {
+  const {
+    minFractals = 2,
+    useTimeDecay = true,
+    confidenceThreshold = 0.6
+  } = options;
+
+  // Validate input
+  if (candles.length < 5) {
+    return {
+      trend: 'INSUFFICIENT_DATA',
+      confidence: 0,
+      pattern: 'Insufficient data for fractal analysis',
+      recentFractals: {
+        lastHigh: null,
+        lastLow: null,
+        previousHigh: null,
+        previousLow: null,
+      },
+      trendStrength: 0,
+      analysis: 'Need at least 5 candles for fractal analysis',
+      recommendations: ['Wait for more price data to perform fractal trend analysis']
+    };
+  }
+
+  // Detect fractals using existing function
+  const fractals = detectFractals(candles);
+  const highs = fractals.filter(f => f.type === 'high');
+  const lows = fractals.filter(f => f.type === 'low');
+
+  // Check if we have enough fractals for analysis
+  if (highs.length < minFractals || lows.length < minFractals) {
+    return {
+      trend: 'INSUFFICIENT_DATA',
+      confidence: 0,
+      pattern: 'Insufficient fractals for trend analysis',
+      recentFractals: {
+        lastHigh: highs.length > 0 ? highs[highs.length - 1] : null,
+        lastLow: lows.length > 0 ? lows[lows.length - 1] : null,
+        previousHigh: highs.length > 1 ? highs[highs.length - 2] : null,
+        previousLow: lows.length > 1 ? lows[lows.length - 2] : null,
+      },
+      trendStrength: 0,
+      analysis: `Need at least ${minFractals} highs and ${minFractals} lows. Found ${highs.length} highs, ${lows.length} lows`,
+      recommendations: ['Wait for more swing points to form before trend analysis']
+    };
+  }
+
+  // Analyze fractal patterns
+  const patternAnalysis = analyzeFractalPattern(fractals);
+  const { isHigherHigh, isLowerHigh, isHigherLow, isLowerLow, patternStrength } = patternAnalysis;
+
+  // Determine trend direction and pattern
+  let trend: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS';
+  let pattern: string;
+  let confidence: number;
+  let trendStrength: number;
+
+  // Strong uptrend: Higher Highs AND Higher Lows
+  if (isHigherHigh && isHigherLow) {
+    trend = 'UPTREND';
+    pattern = 'Higher Highs + Higher Lows';
+    confidence = 0.85 + (patternStrength / 100) * 0.15; // 85-100% confidence
+    trendStrength = patternStrength;
+  }
+  // Moderate uptrend: Higher Highs OR Higher Lows (but not both clearly)
+  else if (isHigherHigh || isHigherLow) {
+    trend = 'UPTREND';
+    pattern = isHigherHigh ? 'Higher Highs' : 'Higher Lows';
+    confidence = 0.60 + (patternStrength / 100) * 0.25; // 60-85% confidence
+    trendStrength = patternStrength * 0.7;
+  }
+  // Strong downtrend: Lower Highs AND Lower Lows
+  else if (isLowerHigh && isLowerLow) {
+    trend = 'DOWNTREND';
+    pattern = 'Lower Highs + Lower Lows';
+    confidence = 0.85 + (patternStrength / 100) * 0.15; // 85-100% confidence
+    trendStrength = patternStrength;
+  }
+  // Moderate downtrend: Lower Highs OR Lower Lows
+  else if (isLowerHigh || isLowerLow) {
+    trend = 'DOWNTREND';
+    pattern = isLowerHigh ? 'Lower Highs' : 'Lower Lows';
+    confidence = 0.60 + (patternStrength / 100) * 0.25; // 60-85% confidence
+    trendStrength = patternStrength * 0.7;
+  }
+  // Sideways: Mixed or equal levels
+  else {
+    trend = 'SIDEWAYS';
+    pattern = 'Mixed/Equal Levels';
+    confidence = 0.40 + (patternStrength / 100) * 0.20; // 40-60% confidence
+    trendStrength = patternStrength * 0.3;
+  }
+
+  // Apply time decay if enabled
+  if (useTimeDecay && patternAnalysis.recentFractals.lastHigh && patternAnalysis.recentFractals.previousHigh) {
+    const decayFactor = calculateTimeDecay(
+      patternAnalysis.recentFractals.lastHigh,
+      patternAnalysis.recentFractals.previousHigh
+    );
+    confidence *= decayFactor;
+  }
+
+  // Ensure confidence is within bounds
+  confidence = Math.max(0, Math.min(1, confidence));
+
+  // Generate analysis text
+  const analysis = `Fractal Trend Analysis:
+- Pattern: ${pattern}
+- Trend Direction: ${trend}
+- Confidence: ${(confidence * 100).toFixed(1)}%
+- Trend Strength: ${(trendStrength * 100).toFixed(1)}%
+- Total Fractals: ${fractals.length} (${highs.length} highs, ${lows.length} lows)
+- Analysis Period: ${candles.length} candles
+- Latest High: ${patternAnalysis.recentFractals.lastHigh?.price.toFixed(5) || 'N/A'}
+- Latest Low: ${patternAnalysis.recentFractals.lastLow?.price.toFixed(5) || 'N/A'}`;
+
+  // Generate recommendations
+  const recommendations = generateFractalTrendRecommendations(trend, confidence, patternAnalysis);
+
+  return {
+    trend,
+    confidence,
+    pattern,
+    recentFractals: patternAnalysis.recentFractals,
+    trendStrength: Math.min(trendStrength / 100, 1),
+    analysis,
+    recommendations,
+  };
+}
+
+/**
+ * Generate recommendations based on fractal trend analysis
+ */
+function generateFractalTrendRecommendations(
+  trend: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS' | 'INSUFFICIENT_DATA',
+  confidence: number,
+  patternAnalysis: FractalPatternAnalysis
+): string[] {
+  const recommendations: string[] = [];
+
+  switch (trend) {
+    case 'UPTREND':
+      if (confidence > 0.8) {
+        recommendations.push('Strong uptrend confirmed by fractal structure');
+        recommendations.push('Consider long positions on pullbacks to recent swing lows');
+        recommendations.push('Place stop-loss below the most recent swing low');
+      } else if (confidence > 0.6) {
+        recommendations.push('Moderate uptrend with some fractal confirmation');
+        recommendations.push('Proceed with caution - trend may be weakening');
+        recommendations.push('Look for additional confirmation signals');
+      } else {
+        recommendations.push('Weak uptrend signals - wait for stronger confirmation');
+        recommendations.push('Monitor for potential trend reversal');
+      }
+      break;
+
+    case 'DOWNTREND':
+      if (confidence > 0.8) {
+        recommendations.push('Strong downtrend confirmed by fractal structure');
+        recommendations.push('Consider short positions on bounces to recent swing highs');
+        recommendations.push('Place stop-loss above the most recent swing high');
+      } else if (confidence > 0.6) {
+        recommendations.push('Moderate downtrend with some fractal confirmation');
+        recommendations.push('Proceed with caution - trend may be weakening');
+        recommendations.push('Look for additional confirmation signals');
+      } else {
+        recommendations.push('Weak downtrend signals - wait for stronger confirmation');
+        recommendations.push('Monitor for potential trend reversal');
+      }
+      break;
+
+    case 'SIDEWAYS':
+      recommendations.push('Market is in consolidation phase');
+      recommendations.push('Avoid trend-following strategies');
+      recommendations.push('Look for breakout above recent highs or below recent lows');
+      recommendations.push('Consider range-bound trading between support and resistance');
+      break;
+
+    case 'INSUFFICIENT_DATA':
+      recommendations.push('Insufficient fractal data for trend analysis');
+      recommendations.push('Wait for more swing points to form');
+      recommendations.push('Use other analysis methods in the meantime');
+      break;
+  }
+
+  // Add general recommendations
+  if (patternAnalysis.recentFractals.lastHigh && patternAnalysis.recentFractals.lastLow) {
+    const lastHigh = patternAnalysis.recentFractals.lastHigh;
+    const lastLow = patternAnalysis.recentFractals.lastLow;
+    
+    recommendations.push(`Key resistance level: ${lastHigh.price.toFixed(5)}`);
+    recommendations.push(`Key support level: ${lastLow.price.toFixed(5)}`);
+    recommendations.push('Monitor price action around these fractal levels');
+  }
+
+  recommendations.push('Fractal trend analysis complements moving average analysis');
+  recommendations.push('Always use proper risk management regardless of trend direction');
+
   return recommendations;
 }
