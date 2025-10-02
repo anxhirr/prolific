@@ -34,6 +34,7 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
   const [minFractals, setMinFractals] = useState(3);
   const [useTimeDecay, setUseTimeDecay] = useState(true);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.6);
+  const [strengthThreshold, setStrengthThreshold] = useState(0);
   const { toast } = useToast();
 
   const performAnalysis = () => {
@@ -47,6 +48,7 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
         minFractals,
         useTimeDecay,
         confidenceThreshold,
+        strengthThreshold,
       });
       
       setFractalTrendResult(analysisResult);
@@ -64,14 +66,14 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
   // Auto-analyze when component mounts or when dependencies change
   useEffect(() => {
     performAnalysis();
-  }, [chartData, minFractals, useTimeDecay, confidenceThreshold]);
+  }, [chartData, minFractals, useTimeDecay, confidenceThreshold, strengthThreshold]);
 
   const handleEnhancedFractalTrendAnalyze = () => {
     performAnalysis();
     if (fractalTrendResult) {
       toast({
         title: "Enhanced Fractal Trend Analysis Complete",
-        description: `Trend: ${fractalTrendResult.trend} with ${(fractalTrendResult.confidence * 100).toFixed(1)}% confidence (${fractalTrendResult.detailedAnalysis?.highSequence.length || 0} highs, ${fractalTrendResult.detailedAnalysis?.lowSequence.length || 0} lows)`,
+        description: `Trend: ${fractalTrendResult.trend} with ${(fractalTrendResult.confidence * 100).toFixed(1)}% confidence (${fractalTrendResult.detailedAnalysis?.highSequence?.length || 0} highs, ${fractalTrendResult.detailedAnalysis?.lowSequence?.length || 0} lows)`,
       });
     }
   };
@@ -130,6 +132,24 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs">Strength Threshold: {strengthThreshold}%</label>
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.1"
+              value={strengthThreshold}
+              onChange={(e) => setStrengthThreshold(Number(e.target.value))}
+              className="w-full h-1"
+            />
+            <div className="text-xs text-muted-foreground">
+              Only analyze fractals with strength ≥ {strengthThreshold}%
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Higher threshold = more reliable trend analysis
+            </div>
+          </div>
           <div className="text-xs text-muted-foreground">
             <p>• Counts ascending vs descending moves across entire history</p>
             <p>• Calculates trend consistency and consecutive patterns</p>
@@ -209,7 +229,7 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Sequence Analysis (ALL Fractals)</CardTitle>
                 <CardDescription className="text-xs">
-                  Complete analysis of {fractalTrendResult.detailedAnalysis.highSequence.length} highs and {fractalTrendResult.detailedAnalysis.lowSequence.length} lows
+                  Complete analysis of {fractalTrendResult.detailedAnalysis?.highSequence?.length || 0} highs and {fractalTrendResult.detailedAnalysis?.lowSequence?.length || 0} lows
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -222,28 +242,28 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
                         <span className="text-xs font-medium">High Sequence</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {getSequenceIcon(fractalTrendResult.detailedAnalysis.highAnalysis.overallTrend)}
+                        {getSequenceIcon(fractalTrendResult.detailedAnalysis?.highAnalysis?.overallTrend || 'sideways')}
                         <span className="text-xs font-bold">
-                          {fractalTrendResult.detailedAnalysis.highAnalysis.overallTrend.toUpperCase()}
+                          {(fractalTrendResult.detailedAnalysis?.highAnalysis?.overallTrend || 'sideways').toUpperCase()}
                         </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-muted-foreground">Ascending:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.highAnalysis.moveCount.ascending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.highAnalysis?.moveCount?.ascending || 0}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Descending:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.highAnalysis.moveCount.descending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.highAnalysis?.moveCount?.descending || 0}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Strength:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.highAnalysis.trendStrength.toFixed(1)}%</span>
+                        <span className="ml-1 font-mono">{(fractalTrendResult.detailedAnalysis?.highAnalysis?.trendStrength || 0).toFixed(1)}%</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Max Consec:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.highAnalysis.patternDetails.maxConsecutiveAscending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.highAnalysis?.patternDetails?.maxConsecutiveAscending || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -256,28 +276,28 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
                         <span className="text-xs font-medium">Low Sequence</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {getSequenceIcon(fractalTrendResult.detailedAnalysis.lowAnalysis.overallTrend)}
+                        {getSequenceIcon(fractalTrendResult.detailedAnalysis?.lowAnalysis?.overallTrend || 'sideways')}
                         <span className="text-xs font-bold">
-                          {fractalTrendResult.detailedAnalysis.lowAnalysis.overallTrend.toUpperCase()}
+                          {(fractalTrendResult.detailedAnalysis?.lowAnalysis?.overallTrend || 'sideways').toUpperCase()}
                         </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-muted-foreground">Ascending:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.lowAnalysis.moveCount.ascending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.lowAnalysis?.moveCount?.ascending || 0}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Descending:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.lowAnalysis.moveCount.descending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.lowAnalysis?.moveCount?.descending || 0}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Strength:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.lowAnalysis.trendStrength.toFixed(1)}%</span>
+                        <span className="ml-1 font-mono">{(fractalTrendResult.detailedAnalysis?.lowAnalysis?.trendStrength || 0).toFixed(1)}%</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Max Consec:</span>
-                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis.lowAnalysis.patternDetails.maxConsecutiveDescending}</span>
+                        <span className="ml-1 font-mono">{fractalTrendResult.detailedAnalysis?.lowAnalysis?.patternDetails?.maxConsecutiveDescending || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -287,7 +307,7 @@ export function EnhancedFractalTrendAnalysisTab({ chartData }: EnhancedFractalTr
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">Trend Consistency</span>
                       <span className="text-xs font-bold">
-                        {fractalTrendResult.detailedAnalysis.overallPattern.trendConsistency.toFixed(1)}%
+                        {(fractalTrendResult.detailedAnalysis?.overallPattern?.trendConsistency || 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>

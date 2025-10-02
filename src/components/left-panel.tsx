@@ -1,17 +1,20 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendAnalysisTab } from "@/components/trend-analysis-tab";
 import { EnhancedFractalTrendAnalysisTab } from "@/components/enhanced-fractal-trend-analysis-tab";
 import { FractalAnalysisTab } from "@/components/fractal-analysis-tab";
 import type { CandlestickData } from "@/lib/types";
 import { BarChart3 } from "lucide-react";
+import { useState } from "react";
 
 interface LeftPanelProps {
   chartData: CandlestickData[];
 }
 
 export function LeftPanel({ chartData }: LeftPanelProps) {
+  const [activeTab, setActiveTab] = useState("trend");
+
   return (
     <aside className="w-[400px] border-r border-border bg-card flex flex-col">
       <div className="flex-shrink-0 p-4 border-b">
@@ -22,24 +25,30 @@ export function LeftPanel({ chartData }: LeftPanelProps) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <Tabs defaultValue="trend" className="w-full h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
           <TabsList className="flex-shrink-0 grid w-full grid-cols-3 rounded-none border-b">
             <TabsTrigger value="trend">Trend</TabsTrigger>
             <TabsTrigger value="enhanced-fractal">Enhanced Fractal</TabsTrigger>
             <TabsTrigger value="fractal">Fractal</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="trend" className="flex-1 min-h-0 mt-0">
-            <TrendAnalysisTab chartData={chartData} />
-          </TabsContent>
-          
-          <TabsContent value="enhanced-fractal" className="flex-1 min-h-0 mt-0">
-            <EnhancedFractalTrendAnalysisTab chartData={chartData} />
-          </TabsContent>
-          
-          <TabsContent value="fractal" className="flex-1 min-h-0 mt-0">
-            <FractalAnalysisTab chartData={chartData} />
-          </TabsContent>
+          {/* All tabs are always mounted, but only the active one is visible */}
+          <div className="flex-1 min-h-0 relative">
+            {/* Trend Analysis Tab */}
+            <div className={`absolute inset-0 ${activeTab === "trend" ? "block" : "hidden"}`}>
+              <TrendAnalysisTab chartData={chartData} />
+            </div>
+            
+            {/* Enhanced Fractal Analysis Tab */}
+            <div className={`absolute inset-0 ${activeTab === "enhanced-fractal" ? "block" : "hidden"}`}>
+              <EnhancedFractalTrendAnalysisTab chartData={chartData} />
+            </div>
+            
+            {/* Fractal Analysis Tab */}
+            <div className={`absolute inset-0 ${activeTab === "fractal" ? "block" : "hidden"}`}>
+              <FractalAnalysisTab chartData={chartData} />
+            </div>
+          </div>
         </Tabs>
       </div>
     </aside>

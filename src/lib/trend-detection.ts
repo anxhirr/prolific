@@ -94,7 +94,8 @@ function calculateSMA(candles: CandlestickData[], period: number, useClosePrice:
  * Detect fractal points using Bill Williams' fractal method
  * A fractal is a 5-candle pattern where the middle candle has the highest high or lowest low
  */
-export function detectFractals(candles: CandlestickData[]): FractalPoint[] {
+export function detectFractals(candles: CandlestickData[], options: { strengthThreshold?: number } = {}): FractalPoint[] {
+  const { strengthThreshold = 0 } = options;
   const fractals: FractalPoint[] = [];
   
   // Need at least 5 candles to detect fractals
@@ -128,28 +129,36 @@ export function detectFractals(candles: CandlestickData[]): FractalPoint[] {
       // Calculate fractal strength based on how much lower it is than surrounding candles
       const avgSurroundingLow = (prev2.low + prev1.low + next1.low + next2.low) / 4;
       const strength = Math.abs(current.low - avgSurroundingLow) / avgSurroundingLow;
+      const strengthPercent = Math.min(strength * 100, 10); // Cap at 10 for display purposes
       
-      fractals.push({
-        type: 'low',
-        index: i,
-        price: current.low,
-        date: current.date,
-        strength: Math.min(strength * 100, 10) // Cap at 10 for display purposes
-      });
+      // Only include fractals that meet the strength threshold
+      if (strengthPercent >= strengthThreshold) {
+        fractals.push({
+          type: 'low',
+          index: i,
+          price: current.low,
+          date: current.date,
+          strength: strengthPercent
+        });
+      }
     }
     
     if (isBearishFractal) {
       // Calculate fractal strength based on how much higher it is than surrounding candles
       const avgSurroundingHigh = (prev2.high + prev1.high + next1.high + next2.high) / 4;
       const strength = Math.abs(current.high - avgSurroundingHigh) / avgSurroundingHigh;
+      const strengthPercent = Math.min(strength * 100, 10); // Cap at 10 for display purposes
       
-      fractals.push({
-        type: 'high',
-        index: i,
-        price: current.high,
-        date: current.date,
-        strength: Math.min(strength * 100, 10) // Cap at 10 for display purposes
-      });
+      // Only include fractals that meet the strength threshold
+      if (strengthPercent >= strengthThreshold) {
+        fractals.push({
+          type: 'high',
+          index: i,
+          price: current.high,
+          date: current.date,
+          strength: strengthPercent
+        });
+      }
     }
   }
   
@@ -270,14 +279,14 @@ export function detectMarketTrend(
 /**
  * Perform fractal analysis separately from trend analysis
  */
-export function analyzeFractals(candles: CandlestickData[]): FractalAnalysisResult {
+export function analyzeFractals(candles: CandlestickData[], options: { strengthThreshold?: number } = {}): FractalAnalysisResult {
   // Validate input
   if (candles.length < 5) {
     throw new Error(`Insufficient data: need at least 5 candles for fractal analysis, got ${candles.length}`);
   }
 
   // Detect fractals
-  const fractals = detectFractals(candles);
+  const fractals = detectFractals(candles, options);
   const highFractals = fractals.filter(f => f.type === 'high');
   const lowFractals = fractals.filter(f => f.type === 'low');
 
@@ -287,6 +296,7 @@ export function analyzeFractals(candles: CandlestickData[]): FractalAnalysisResu
 - Swing highs: ${highFractals.length}
 - Swing lows: ${lowFractals.length}
 - Analysis period: ${candles.length} candles
+- Strength threshold: ${options.strengthThreshold || 0}%
 - Latest fractal: ${fractals.length > 0 ? fractals[fractals.length - 1].type.toUpperCase() : 'None'} at ${fractals.length > 0 ? fractals[fractals.length - 1].price.toFixed(5) : 'N/A'}`;
 
   // Generate recommendations
@@ -462,7 +472,7 @@ export function detectFractalTrend(
   }
 
   // Detect fractals using existing function
-  const fractals = detectFractals(candles);
+  const fractals = detectFractals(candles, {});
   const highs = fractals.filter(f => f.type === 'high');
   const lows = fractals.filter(f => f.type === 'low');
 

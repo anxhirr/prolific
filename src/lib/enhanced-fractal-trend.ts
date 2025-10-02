@@ -256,12 +256,13 @@ function calculateTimeDecay(lastFractal: FractalPoint, previousFractal: FractalP
  */
 export function detectEnhancedFractalTrend(
   candles: CandlestickData[],
-  options: { minFractals?: number; useTimeDecay?: boolean; confidenceThreshold?: number } = {}
+  options: { minFractals?: number; useTimeDecay?: boolean; confidenceThreshold?: number; strengthThreshold?: number } = {}
 ): EnhancedFractalTrendResult {
   const {
     minFractals = 3, // Require at least 3 fractals for better analysis
     useTimeDecay = true,
-    confidenceThreshold = 0.6
+    confidenceThreshold = 0.6,
+    strengthThreshold = 0
   } = options;
 
   // Validate input
@@ -279,12 +280,57 @@ export function detectEnhancedFractalTrend(
       trendStrength: 0,
       analysis: 'Need at least 5 candles for fractal analysis',
       recommendations: ['Wait for more price data to perform fractal trend analysis'],
-      detailedAnalysis: {} as EnhancedFractalPatternAnalysis
+      detailedAnalysis: {
+        recentFractals: {
+          lastHigh: null,
+          lastLow: null,
+          previousHigh: null,
+          previousLow: null,
+        },
+        highSequence: [],
+        lowSequence: [],
+        highAnalysis: {
+          overallTrend: 'sideways' as const,
+          trendStrength: 0,
+          consecutiveMoves: 0,
+          averageMove: 0,
+          consistency: 0,
+          moveCount: { ascending: 0, descending: 0, total: 0 },
+          patternDetails: {
+            maxConsecutiveAscending: 0,
+            maxConsecutiveDescending: 0,
+            recentDirection: 'sideways' as const,
+            sequenceLength: 0
+          }
+        },
+        lowAnalysis: {
+          overallTrend: 'sideways' as const,
+          trendStrength: 0,
+          consecutiveMoves: 0,
+          averageMove: 0,
+          consistency: 0,
+          moveCount: { ascending: 0, descending: 0, total: 0 },
+          patternDetails: {
+            maxConsecutiveAscending: 0,
+            maxConsecutiveDescending: 0,
+            recentDirection: 'sideways' as const,
+            sequenceLength: 0
+          }
+        },
+        overallPattern: {
+          isHigherHigh: false,
+          isLowerHigh: false,
+          isHigherLow: false,
+          isLowerLow: false,
+          patternStrength: 0,
+          trendConsistency: 0
+        }
+      }
     };
   }
 
   // Detect fractals using existing function
-  const fractals = detectFractals(candles);
+  const fractals = detectFractals(candles, { strengthThreshold });
   const highs = fractals.filter(f => f.type === 'high');
   const lows = fractals.filter(f => f.type === 'low');
   
@@ -302,7 +348,52 @@ export function detectEnhancedFractalTrend(
       trendStrength: 0,
       analysis: `Need at least ${minFractals} highs and ${minFractals} lows for comprehensive analysis. Found ${highs.length} highs, ${lows.length} lows`,
       recommendations: ['Wait for more swing points to form before enhanced trend analysis'],
-      detailedAnalysis: {} as EnhancedFractalPatternAnalysis
+      detailedAnalysis: {
+        recentFractals: {
+          lastHigh: null,
+          lastLow: null,
+          previousHigh: null,
+          previousLow: null,
+        },
+        highSequence: [],
+        lowSequence: [],
+        highAnalysis: {
+          overallTrend: 'sideways' as const,
+          trendStrength: 0,
+          consecutiveMoves: 0,
+          averageMove: 0,
+          consistency: 0,
+          moveCount: { ascending: 0, descending: 0, total: 0 },
+          patternDetails: {
+            maxConsecutiveAscending: 0,
+            maxConsecutiveDescending: 0,
+            recentDirection: 'sideways' as const,
+            sequenceLength: 0
+          }
+        },
+        lowAnalysis: {
+          overallTrend: 'sideways' as const,
+          trendStrength: 0,
+          consecutiveMoves: 0,
+          averageMove: 0,
+          consistency: 0,
+          moveCount: { ascending: 0, descending: 0, total: 0 },
+          patternDetails: {
+            maxConsecutiveAscending: 0,
+            maxConsecutiveDescending: 0,
+            recentDirection: 'sideways' as const,
+            sequenceLength: 0
+          }
+        },
+        overallPattern: {
+          isHigherHigh: false,
+          isLowerHigh: false,
+          isHigherLow: false,
+          isLowerLow: false,
+          patternStrength: 0,
+          trendConsistency: 0
+        }
+      }
     };
   }
 

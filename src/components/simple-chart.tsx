@@ -54,7 +54,7 @@ export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: Sim
   const [isPanning, setIsPanning] = useState(false);
   
   // Detect fractals
-  const fractals = showFractals ? detectFractals(data) : [];
+  const fractals = showFractals ? detectFractals(data, {}) : [];
 
   // Update canvas size when container changes
   useEffect(() => {

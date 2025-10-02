@@ -27,6 +27,7 @@ interface FractalAnalysisTabProps {
 
 export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
   const [fractalResult, setFractalResult] = useState<FractalAnalysisResult | null>(null);
+  const [strengthThreshold, setStrengthThreshold] = useState(0);
   const { toast } = useToast();
 
   const performAnalysis = () => {
@@ -36,7 +37,7 @@ export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
     }
 
     try {
-      const analysisResult = analyzeFractals(chartData);
+      const analysisResult = analyzeFractals(chartData, { strengthThreshold });
       setFractalResult(analysisResult);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -49,10 +50,10 @@ export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
     }
   };
 
-  // Auto-analyze when component mounts or when chart data changes
+  // Auto-analyze when component mounts or when dependencies change
   useEffect(() => {
     performAnalysis();
-  }, [chartData]);
+  }, [chartData, strengthThreshold]);
 
   const handleFractalAnalyze = () => {
     performAnalysis();
@@ -66,6 +67,33 @@ export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs">Strength Threshold: {strengthThreshold}%</label>
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.1"
+              value={strengthThreshold}
+              onChange={(e) => setStrengthThreshold(Number(e.target.value))}
+              className="w-full h-1"
+            />
+            <div className="text-xs text-muted-foreground">
+              Only show fractals with strength ≥ {strengthThreshold}%
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Higher threshold = fewer but stronger fractals
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Button 
         onClick={handleFractalAnalyze} 
         disabled={chartData.length < 5}
@@ -147,6 +175,10 @@ export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
                   <span className="font-bold">Williams Fractals</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Strength Threshold</span>
+                  <span className="font-bold">{strengthThreshold}%</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Data Points</span>
                   <span className="font-bold">{chartData.length}</span>
                 </div>
@@ -171,6 +203,9 @@ export function FractalAnalysisTab({ chartData }: FractalAnalysisTabProps) {
                         <div className={`w-2 h-2 rounded-full ${fractal.type === 'high' ? 'bg-red-500' : 'bg-green-500'}`} />
                         <span className="text-xs font-medium">
                           {fractal.type === 'high' ? 'High' : 'Low'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({fractal.strength.toFixed(1)}%)
                         </span>
                       </div>
                       <div className="text-right">

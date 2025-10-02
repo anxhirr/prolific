@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOandaInstruments } from "@/hooks/use-oanda-instruments";
 import type { CandlestickData } from "@/lib/types";
 import { AlertCircle, Loader2, RefreshCw, Search } from "lucide-react";
@@ -196,22 +196,31 @@ export function RightPanel({
   selectedInstrument,
   onInstrumentSelect,
 }: RightPanelProps) {
+  const [activeTab, setActiveTab] = useState("watchlist");
+
   return (
     <aside className="w-[350px] border-l border-border bg-card flex flex-col">
-      <Tabs defaultValue="watchlist" className="w-full h-full flex flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
         <TabsList className="flex-shrink-0 grid w-full grid-cols-2 rounded-none border-b">
           <TabsTrigger value="watchlist">Forex Instruments</TabsTrigger>
           <TabsTrigger value="ai">AI Analysis</TabsTrigger>
         </TabsList>
-        <TabsContent value="watchlist" className="flex-1 min-h-0 mt-0">
-          <WatchlistPanel
-            selectedInstrument={selectedInstrument}
-            onInstrumentSelect={onInstrumentSelect}
-          />
-        </TabsContent>
-        <TabsContent value="ai" className="flex-1 min-h-0 mt-0">
-          <AiPanel chartData={chartData} />
-        </TabsContent>
+        
+        {/* All tabs are always mounted, but only the active one is visible */}
+        <div className="flex-1 min-h-0 relative">
+          {/* Watchlist Panel */}
+          <div className={`absolute inset-0 ${activeTab === "watchlist" ? "block" : "hidden"}`}>
+            <WatchlistPanel
+              selectedInstrument={selectedInstrument}
+              onInstrumentSelect={onInstrumentSelect}
+            />
+          </div>
+          
+          {/* AI Panel */}
+          <div className={`absolute inset-0 ${activeTab === "ai" ? "block" : "hidden"}`}>
+            <AiPanel chartData={chartData} />
+          </div>
+        </div>
       </Tabs>
     </aside>
   );
