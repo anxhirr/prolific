@@ -5,6 +5,7 @@ import { DrawingToolbar } from "@/components/drawing-toolbar";
 import { SimpleChart } from "@/components/simple-chart";
 import { LeftPanel } from "@/components/left-panel";
 import { RightPanel } from "@/components/right-panel";
+import { FractalAnalysisPanel } from "@/components/fractal-analysis-panel";
 import { useOandaCandles } from "@/hooks/use-oanda-candles";
 import type { CandlestickData } from "@/lib/types";
 import { useState } from "react";
@@ -88,6 +89,7 @@ export default function ChartWhisperPage() {
           selectedInstrument={instrument}
           onInstrumentSelect={handleInstrumentSelect}
         />
+        <FractalAnalysisPanel chartData={chartData} />
       </div>
     </div>
   );
