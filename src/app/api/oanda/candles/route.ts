@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
       count: candlesResponse.candles.length,
     });
   } catch (error) {
-    console.error("Error in candles API:", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";

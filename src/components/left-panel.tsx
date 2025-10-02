@@ -75,7 +75,6 @@ export function LeftPanel({ chartData }: LeftPanelProps) {
         description: `Market is in ${analysisResult.trend.toLowerCase()} with ${(analysisResult.confidence * 100).toFixed(1)}% confidence.`,
       });
     } catch (error) {
-      console.error("Trend analysis failed:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       toast({
         variant: "destructive",
@@ -104,7 +103,6 @@ export function LeftPanel({ chartData }: LeftPanelProps) {
         description: `Found ${analysisResult.totalFractals} fractal points (${analysisResult.highFractals} highs, ${analysisResult.lowFractals} lows).`,
       });
     } catch (error) {
-      console.error("Fractal analysis failed:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       toast({
         variant: "destructive",

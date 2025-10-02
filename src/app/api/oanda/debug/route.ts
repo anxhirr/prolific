@@ -5,10 +5,8 @@ export async function GET(request: NextRequest) {
     const apiKey =
       "d14032539d0ad19e78259a10d9d5f733-0c1c6513bf19879c697b352447409af9";
 
-    console.log("Testing OANDA API with key:", apiKey.substring(0, 10) + "...");
 
     // First, let's test if the API key is valid by trying to access the v20 endpoint
-    console.log("Testing v20 endpoint...");
     const v20Response = await fetch(
       "https://api-fxpractice.oanda.com/v20/accounts",
       {
@@ -20,14 +18,11 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    console.log("v20 response status:", v20Response.status);
     if (v20Response.ok) {
       const v20Data = await v20Response.json();
-      console.log("v20 accounts found:", v20Data.accounts?.length || 0);
     }
 
     // Test the accounts endpoint first (try practice environment)
-    console.log("Testing practice environment...");
     let accountsResponse = await fetch(
       "https://api-fxpractice.oanda.com/v3/accounts",
       {
@@ -42,7 +37,6 @@ export async function GET(request: NextRequest) {
 
     // If practice fails, try live environment
     if (!accountsResponse.ok) {
-      console.log("Practice environment failed, trying live environment...");
       accountsResponse = await fetch(
         "https://api-fxtrade.oanda.com/v3/accounts",
         {
@@ -86,7 +80,6 @@ export async function GET(request: NextRequest) {
       ? "https://api-fxtrade.oanda.com/v3"
       : "https://api-fxpractice.oanda.com/v3";
 
-    console.log(`Using base URL: ${baseUrl} for account: ${accountId}`);
 
     // Now test the instruments endpoint
     const instrumentsResponse = await fetch(
@@ -127,7 +120,6 @@ export async function GET(request: NextRequest) {
       apiKeyPrefix: apiKey.substring(0, 10) + "...",
     });
   } catch (error) {
-    console.error("Debug error:", error);
     return NextResponse.json(
       {
         error: "Debug failed",

@@ -40,7 +40,6 @@ export function useOandaInstruments(
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch instruments";
       setError(errorMessage);
-      console.error("Error fetching OANDA instruments:", err);
 
       // Fall back to empty array on error
       setInstruments([]);

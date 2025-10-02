@@ -69,13 +69,10 @@ export function useOandaCandles(
       const transformedCandles: CandlestickData[] = data.candles.map(
         (candle: any) => {
           const priceData = candle.mid || candle.bid || candle.ask;
-          const date = new Date(candle.time);
+          const date = new Date( parseInt(candle.time) * 1000);
 
           return {
-            date: date.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            }),
+            date: date.toISOString(), // Preserve full timestamp
             open: parseFloat(priceData.o),
             high: parseFloat(priceData.h),
             low: parseFloat(priceData.l),
@@ -89,7 +86,6 @@ export function useOandaCandles(
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch candles";
       setError(errorMessage);
-      console.error("Error fetching OANDA candles:", err);
 
       // Fall back to empty array on error
       setCandles([]);

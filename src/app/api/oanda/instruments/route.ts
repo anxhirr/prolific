@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       filtered: instruments.length,
     });
   } catch (error) {
-    console.error("Error in instruments API:", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
       total: instruments.length,
     });
   } catch (error) {
-    console.error("Error in instruments POST API:", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";

@@ -77,6 +77,7 @@ export default function ChartWhisperPage() {
             ) : (
               <SimpleChart
                 data={chartData}
+                timeframe={timeframe}
                 key={`${instrument}-${timeframe}`}
               />
             )}

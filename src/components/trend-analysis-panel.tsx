@@ -72,7 +72,6 @@ export function TrendAnalysisPanel({ chartData }: TrendAnalysisPanelProps) {
         description: `Market is in ${analysisResult.trend.toLowerCase()} with ${(analysisResult.confidence * 100).toFixed(1)}% confidence.`,
       });
     } catch (error) {
-      console.error("Trend analysis failed:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       toast({
         variant: "destructive",

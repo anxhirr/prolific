@@ -13,16 +13,49 @@ import {
   YAxis,
 } from "recharts";
 
+// TradingView-style date formatting based on timeframe
+const formatDate = (dateString: string, timeframe: string = "1D") => {
+  const date = new Date(dateString);
+  
+  // Determine format based on timeframe
+  switch (timeframe) {
+    case "5M":
+    case "15M":
+    case "30M":
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    case "1H":
+    case "4H":
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        hour12: false
+      });
+    case "1D":
+    default:
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "2-digit"
+      });
+  }
+};
+
 interface InteractiveChartProps {
   data: CandlestickData[];
+  timeframe?: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, timeframe = "1D" }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="p-2 bg-card/80 border border-border rounded-lg shadow-lg text-sm backdrop-blur-sm">
-        <p className="font-bold">{label}</p>
+        <p className="font-bold">{formatDate(label, timeframe)}</p>
         <div className="grid grid-cols-2 gap-x-2">
           <p>
             Open: <span className="font-mono">{data.open.toFixed(2)}</span>
@@ -50,7 +83,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function InteractiveChart({ data }: InteractiveChartProps) {
+export function InteractiveChart({ data, timeframe = "1D" }: InteractiveChartProps) {
   const processedData = data.map((d) => ({
     ...d,
     body: [d.open, d.close],
@@ -73,6 +106,8 @@ export function InteractiveChart({ data }: InteractiveChartProps) {
           dataKey="date"
           tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
           tickLine={{ stroke: "hsl(var(--muted-foreground))" }}
+          tickFormatter={(value) => formatDate(value, timeframe)}
+          interval="preserveStartEnd"
         />
         <YAxis
           orientation="right"
@@ -81,7 +116,7 @@ export function InteractiveChart({ data }: InteractiveChartProps) {
           tickLine={{ stroke: "hsl(var(--muted-foreground))" }}
         />
         <Tooltip
-          content={<CustomTooltip />}
+          content={(props) => <CustomTooltip {...props} timeframe={timeframe} />}
           cursor={{
             stroke: "hsl(var(--primary))",
             strokeWidth: 1,

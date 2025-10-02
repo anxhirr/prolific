@@ -4,12 +4,45 @@ import { CandlestickData } from "@/lib/types";
 import { detectFractals, type FractalPoint } from "@/lib/trend-detection";
 import { useRef, useEffect, useState, useCallback } from "react";
 
+// TradingView-style date formatting based on timeframe
+const formatDate = (dateString: string, timeframe: string = "1D") => {
+  const date = new Date(dateString);
+  
+  // Determine format based on timeframe
+  switch (timeframe) {
+    case "5M":
+    case "15M":
+    case "30M":
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    case "1H":
+    case "4H":
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        hour12: false
+      });
+    case "1D":
+    default:
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "2-digit"
+      });
+  }
+};
+
 interface SimpleChartProps {
   data: CandlestickData[];
   showFractals?: boolean;
+  timeframe?: string;
 }
 
-export function SimpleChart({ data, showFractals = true }: SimpleChartProps) {
+export function SimpleChart({ data, showFractals = true, timeframe = "1D" }: SimpleChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
@@ -184,21 +217,34 @@ export function SimpleChart({ data, showFractals = true }: SimpleChartProps) {
 
     // Draw date labels
     ctx.textAlign = "center";
-    const step = Math.max(1, Math.floor(visibleData.length / 8));
+    ctx.fillStyle = "hsl(var(--muted-foreground))";
+    ctx.font = "11px system-ui";
+    
+    // Calculate optimal step based on visible data and timeframe
+    let step = Math.max(1, Math.floor(visibleData.length / 8));
+    
+    // Adjust step for different timeframes to avoid overcrowding
+    if (timeframe === "5M" || timeframe === "15M") {
+      step = Math.max(step, Math.floor(visibleData.length / 12));
+    } else if (timeframe === "1H" || timeframe === "4H") {
+      step = Math.max(step, Math.floor(visibleData.length / 10));
+    }
     
     for (let i = 0; i < visibleData.length; i += step) {
       const candle = visibleData[i];
       const x = startX + i * (candleWidth + 2) + candleWidth / 2;
-      const date = new Date(candle.date);
-      const dateStr = date.toLocaleDateString("en-US", { 
-        month: "short", 
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      ctx.fillText(dateStr, x, dimensions.height - 20);
+      const dateStr = formatDate(candle.date, timeframe);
+      
+      // Ensure text doesn't overflow chart bounds
+      const textWidth = ctx.measureText(dateStr).width;
+      const maxX = dimensions.width - 40;
+      const minX = startX;
+      
+      if (x - textWidth/2 >= minX && x + textWidth/2 <= maxX) {
+        ctx.fillText(dateStr, x, dimensions.height - 20);
+      }
     }
-  }, [dimensions, visibleData, visibleFractals, yMin, yMax, priceToY, showFractals]);
+  }, [dimensions, visibleData, visibleFractals, yMin, yMax, priceToY, showFractals, timeframe]);
 
   // Handle mouse wheel for zoom
   const handleWheel = (e: React.WheelEvent) => {

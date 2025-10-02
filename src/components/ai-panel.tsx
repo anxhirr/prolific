@@ -67,7 +67,6 @@ export function AiPanel({ chartData }: AiPanelProps) {
         });
       }
     } catch (error) {
-      console.error("AI analysis failed:", error);
       toast({
         variant: "destructive",
         title: "Analysis Error",

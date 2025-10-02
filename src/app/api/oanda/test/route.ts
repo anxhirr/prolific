@@ -46,7 +46,6 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Error testing OANDA connection:", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";

@@ -24,14 +24,12 @@ export class OandaService {
         ? "https://api-fxtrade.oanda.com/v3"
         : "https://api-fxpractice.oanda.com/v3";
 
-    console.log(`OANDA Service initialized with base URL: ${this.baseUrl}`);
   }
 
   private async makeRequest<T>(endpoint: string): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
     try {
-      console.log(`Making request to: ${url}`);
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -42,7 +40,6 @@ export class OandaService {
         },
       });
 
-      console.log(`Response status: ${response.status}`);
 
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -94,7 +91,6 @@ export class OandaService {
         displayPrecision: instrument.displayPrecision,
       }));
     } catch (error) {
-      console.error("Error fetching instruments from OANDA:", error);
       throw error;
     }
   }
@@ -195,10 +191,6 @@ export class OandaService {
       // Sort instruments by popularity
       return this.sortInstrumentsByPopularity(instrumentsWithPricing);
     } catch (error) {
-      console.error(
-        "Error fetching instruments with pricing from OANDA:",
-        error
-      );
       throw error;
     }
   }
@@ -276,7 +268,6 @@ export class OandaService {
       await this.getAccounts();
       return true;
     } catch (error) {
-      console.error("OANDA connection test failed:", error);
       return false;
     }
   }
