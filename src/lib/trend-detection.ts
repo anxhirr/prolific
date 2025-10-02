@@ -23,6 +23,7 @@ export interface TrendAnalysisResult {
 
 export interface FractalAnalysisResult {
   fractals: FractalPoint[];
+  recentFractals: FractalPoint[];
   totalFractals: number;
   highFractals: number;
   lowFractals: number;
@@ -319,6 +320,7 @@ export function analyzeFractals(candles: CandlestickData[]): FractalAnalysisResu
 
   return {
     fractals,
+    recentFractals: fractals.slice(-10), // Get the last 10 fractals
     totalFractals: fractals.length,
     highFractals: highFractals.length,
     lowFractals: lowFractals.length,
