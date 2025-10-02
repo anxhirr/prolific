@@ -1,16 +1,21 @@
 "use client";
 
 import { CandlestickData } from "@/lib/types";
+import { detectFractals, type FractalPoint } from "@/lib/trend-detection";
 import { useRef, useEffect, useState, useCallback } from "react";
 
 interface SimpleChartProps {
   data: CandlestickData[];
+  showFractals?: boolean;
 }
 
-export function SimpleChart({ data }: SimpleChartProps) {
+export function SimpleChart({ data, showFractals = true }: SimpleChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
+  
+  // Detect fractals
+  const fractals = showFractals ? detectFractals(data) : [];
 
   // Update canvas size when container changes
   useEffect(() => {
@@ -33,6 +38,11 @@ export function SimpleChart({ data }: SimpleChartProps) {
 
   // Get visible candles
   const visibleData = data.slice(visibleRange.start, visibleRange.end + 1);
+  
+  // Get visible fractals
+  const visibleFractals = fractals.filter((fractal: FractalPoint) => 
+    fractal.index >= visibleRange.start && fractal.index <= visibleRange.end
+  );
   
   // Calculate price range
   const allPrices = visibleData.flatMap(d => [d.open, d.high, d.low, d.close]);
@@ -133,6 +143,34 @@ export function SimpleChart({ data }: SimpleChartProps) {
       }
     });
 
+    // Draw fractal points
+    if (showFractals && visibleFractals.length > 0) {
+      visibleFractals.forEach((fractal: FractalPoint) => {
+        const fractalIndex = fractal.index - visibleRange.start;
+        const x = startX + fractalIndex * (candleWidth + 2) + candleWidth / 2;
+        const y = priceToY(fractal.price);
+        
+        // Draw fractal point
+        ctx.fillStyle = fractal.type === 'high' ? '#ef4444' : '#22c55e';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Draw fractal label
+        ctx.fillStyle = fractal.type === 'high' ? '#ef4444' : '#22c55e';
+        ctx.font = "10px system-ui";
+        ctx.textAlign = "center";
+        const labelY = fractal.type === 'high' ? y - 15 : y + 20;
+        ctx.fillText(fractal.type === 'high' ? 'H' : 'L', x, labelY);
+        
+        // Draw price label
+        ctx.fillStyle = "hsl(var(--muted-foreground))";
+        ctx.font = "9px system-ui";
+        const priceLabelY = fractal.type === 'high' ? y - 25 : y + 30;
+        ctx.fillText(fractal.price.toFixed(5), x, priceLabelY);
+      });
+    }
+
     // Draw price labels
     ctx.fillStyle = "hsl(var(--muted-foreground))";
     ctx.font = "11px system-ui";
@@ -160,7 +198,7 @@ export function SimpleChart({ data }: SimpleChartProps) {
       });
       ctx.fillText(dateStr, x, dimensions.height - 20);
     }
-  }, [dimensions, visibleData, yMin, yMax, priceToY]);
+  }, [dimensions, visibleData, visibleFractals, yMin, yMax, priceToY, showFractals]);
 
   // Handle mouse wheel for zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -229,6 +267,11 @@ export function SimpleChart({ data }: SimpleChartProps) {
       
       <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
         {visibleData.length} of {data.length} candles
+        {showFractals && fractals.length > 0 && (
+          <span className="ml-2">
+            • {fractals.length} fractals ({fractals.filter((f: FractalPoint) => f.type === 'high').length}H, {fractals.filter((f: FractalPoint) => f.type === 'low').length}L)
+          </span>
+        )}
       </div>
     </div>
   );

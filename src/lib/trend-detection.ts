@@ -1,5 +1,13 @@
 import type { CandlestickData } from './types';
 
+export interface FractalPoint {
+  type: 'high' | 'low';
+  index: number;
+  price: number;
+  date: string;
+  strength: number;
+}
+
 export interface TrendAnalysisResult {
   trend: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS';
   confidence: number;
@@ -11,6 +19,15 @@ export interface TrendAnalysisResult {
   uptrendPercentage: number;
   downtrendPercentage: number;
   analysis: string;
+}
+
+export interface FractalAnalysisResult {
+  fractals: FractalPoint[];
+  totalFractals: number;
+  highFractals: number;
+  lowFractals: number;
+  analysis: string;
+  recommendations: string[];
 }
 
 export interface TrendDetectionOptions {
@@ -33,6 +50,72 @@ function calculateSMA(candles: CandlestickData[], period: number, useClosePrice:
   }
   
   return sma;
+}
+
+/**
+ * Detect fractal points using Bill Williams' fractal method
+ * A fractal is a 5-candle pattern where the middle candle has the highest high or lowest low
+ */
+export function detectFractals(candles: CandlestickData[]): FractalPoint[] {
+  const fractals: FractalPoint[] = [];
+  
+  // Need at least 5 candles to detect fractals
+  if (candles.length < 5) {
+    return fractals;
+  }
+  
+  // Start from index 2 (3rd candle) and go to length-2 (3rd from last)
+  for (let i = 2; i < candles.length - 2; i++) {
+    const current = candles[i];
+    const prev2 = candles[i - 2];
+    const prev1 = candles[i - 1];
+    const next1 = candles[i + 1];
+    const next2 = candles[i + 2];
+    
+    // Check for bullish fractal (swing low)
+    const isBullishFractal = 
+      current.low < prev2.low && 
+      current.low < prev1.low && 
+      current.low < next1.low && 
+      current.low < next2.low;
+    
+    // Check for bearish fractal (swing high)
+    const isBearishFractal = 
+      current.high > prev2.high && 
+      current.high > prev1.high && 
+      current.high > next1.high && 
+      current.high > next2.high;
+    
+    if (isBullishFractal) {
+      // Calculate fractal strength based on how much lower it is than surrounding candles
+      const avgSurroundingLow = (prev2.low + prev1.low + next1.low + next2.low) / 4;
+      const strength = Math.abs(current.low - avgSurroundingLow) / avgSurroundingLow;
+      
+      fractals.push({
+        type: 'low',
+        index: i,
+        price: current.low,
+        date: current.date,
+        strength: Math.min(strength * 100, 10) // Cap at 10 for display purposes
+      });
+    }
+    
+    if (isBearishFractal) {
+      // Calculate fractal strength based on how much higher it is than surrounding candles
+      const avgSurroundingHigh = (prev2.high + prev1.high + next1.high + next2.high) / 4;
+      const strength = Math.abs(current.high - avgSurroundingHigh) / avgSurroundingHigh;
+      
+      fractals.push({
+        type: 'high',
+        index: i,
+        price: current.high,
+        date: current.date,
+        strength: Math.min(strength * 100, 10) // Cap at 10 for display purposes
+      });
+    }
+  }
+  
+  return fractals;
 }
 
 /**
@@ -143,6 +226,67 @@ export function detectMarketTrend(
     uptrendPercentage,
     downtrendPercentage,
     analysis,
+  };
+}
+
+/**
+ * Perform fractal analysis separately from trend analysis
+ */
+export function analyzeFractals(candles: CandlestickData[]): FractalAnalysisResult {
+  // Validate input
+  if (candles.length < 5) {
+    throw new Error(`Insufficient data: need at least 5 candles for fractal analysis, got ${candles.length}`);
+  }
+
+  // Detect fractals
+  const fractals = detectFractals(candles);
+  const highFractals = fractals.filter(f => f.type === 'high');
+  const lowFractals = fractals.filter(f => f.type === 'low');
+
+  // Generate analysis
+  const analysis = `Fractal Analysis Results:
+- Total fractals detected: ${fractals.length}
+- Swing highs: ${highFractals.length}
+- Swing lows: ${lowFractals.length}
+- Analysis period: ${candles.length} candles
+- Latest fractal: ${fractals.length > 0 ? fractals[fractals.length - 1].type.toUpperCase() : 'None'} at ${fractals.length > 0 ? fractals[fractals.length - 1].price.toFixed(5) : 'N/A'}`;
+
+  // Generate recommendations
+  const recommendations: string[] = [];
+  
+  if (fractals.length === 0) {
+    recommendations.push('No fractal points detected - market may be in strong trend');
+    recommendations.push('Wait for more price action to identify swing points');
+  } else {
+    if (highFractals.length > 0) {
+      const latestHigh = highFractals[highFractals.length - 1];
+      recommendations.push(`Latest resistance level: ${latestHigh.price.toFixed(5)} (${latestHigh.date})`);
+    }
+    
+    if (lowFractals.length > 0) {
+      const latestLow = lowFractals[lowFractals.length - 1];
+      recommendations.push(`Latest support level: ${latestLow.price.toFixed(5)} (${latestLow.date})`);
+    }
+    
+    if (highFractals.length >= 2) {
+      recommendations.push('Multiple resistance levels identified - look for breakouts');
+    }
+    
+    if (lowFractals.length >= 2) {
+      recommendations.push('Multiple support levels identified - monitor for bounces');
+    }
+    
+    recommendations.push('Use fractal levels for stop-loss and take-profit placement');
+    recommendations.push('Fractal breaks often lead to significant price moves');
+  }
+
+  return {
+    fractals,
+    totalFractals: fractals.length,
+    highFractals: highFractals.length,
+    lowFractals: lowFractals.length,
+    analysis,
+    recommendations,
   };
 }
 
