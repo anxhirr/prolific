@@ -38,7 +38,7 @@ export class OandaService {
           Authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
           "Accept-Datetime-Format": "UNIX",
-          "User-Agent": "ChartWhisper/1.0",
+          "User-Agent": "Prolific/1.0",
         },
       });
 

@@ -1,4 +1,4 @@
-# **App Name**: ChartWhisper
+# **App Name**: Prolific
 
 ## Core Features:
 

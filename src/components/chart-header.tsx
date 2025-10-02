@@ -55,7 +55,7 @@ export function ChartHeader({
       <div className="flex items-center gap-2">
         <CandlestickChart className="h-8 w-8 text-primary" />
         <h1 className="text-2xl font-headline font-bold text-primary-foreground">
-          ChartWhisper
+          Prolific
         </h1>
       </div>
 

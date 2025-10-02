@@ -3,6 +3,7 @@
 import { ChartHeader } from "@/components/chart-header";
 import { DrawingToolbar } from "@/components/drawing-toolbar";
 import { InteractiveChart } from "@/components/interactive-chart";
+import { LeftPanel } from "@/components/left-panel";
 import { RightPanel } from "@/components/right-panel";
 import { useOandaCandles } from "@/hooks/use-oanda-candles";
 import type { CandlestickData } from "@/lib/types";
@@ -45,6 +46,7 @@ export default function ChartWhisperPage() {
         selectedInstrument={instrument}
       />
       <div className="flex flex-1 overflow-hidden">
+        <LeftPanel chartData={chartData} />
         <DrawingToolbar />
         <main className="flex-1 flex flex-col">
           <div className="flex-grow relative p-4">
