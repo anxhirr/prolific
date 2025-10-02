@@ -1,6 +1,7 @@
 "use client";
 
 import { AiPanel } from "@/components/ai-panel";
+import { TrendAnalysisPanel } from "@/components/trend-analysis-panel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,11 +199,15 @@ export function RightPanel({
 }: RightPanelProps) {
   return (
     <aside className="w-[350px] border-l border-border bg-card flex flex-col">
-      <Tabs defaultValue="watchlist" className="w-full h-full flex flex-col">
-        <TabsList className="flex-shrink-0 grid w-full grid-cols-2 rounded-none border-b">
+      <Tabs defaultValue="trend" className="w-full h-full flex flex-col">
+        <TabsList className="flex-shrink-0 grid w-full grid-cols-3 rounded-none border-b">
+          <TabsTrigger value="trend">Trend Analysis</TabsTrigger>
           <TabsTrigger value="watchlist">Forex Instruments</TabsTrigger>
           <TabsTrigger value="ai">AI Analysis</TabsTrigger>
         </TabsList>
+        <TabsContent value="trend" className="flex-1 min-h-0 mt-0">
+          <TrendAnalysisPanel chartData={chartData} />
+        </TabsContent>
         <TabsContent value="watchlist" className="flex-1 min-h-0 mt-0">
           <WatchlistPanel
             selectedInstrument={selectedInstrument}
