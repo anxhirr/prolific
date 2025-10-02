@@ -2,7 +2,7 @@
 
 import { ChartHeader } from "@/components/chart-header";
 import { DrawingToolbar } from "@/components/drawing-toolbar";
-import { InteractiveChart } from "@/components/interactive-chart";
+import { SimpleChart } from "@/components/simple-chart";
 import { LeftPanel } from "@/components/left-panel";
 import { RightPanel } from "@/components/right-panel";
 import { useOandaCandles } from "@/hooks/use-oanda-candles";
@@ -75,7 +75,7 @@ export default function ChartWhisperPage() {
                 </div>
               </div>
             ) : (
-              <InteractiveChart
+              <SimpleChart
                 data={chartData}
                 key={`${instrument}-${timeframe}`}
               />
